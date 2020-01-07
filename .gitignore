@@ -1,6 +1,10 @@
 .*.swp
 *.o
 *.log
+*.dll
+*.cbp
+*.exe
+*.cmake
 dump.rdb
 redis-benchmark
 redis-check-aof
