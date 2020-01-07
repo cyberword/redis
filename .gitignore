@@ -5,6 +5,8 @@
 *.cbp
 *.exe
 *.cmake
+.github
+.idea
 dump.rdb
 redis-benchmark
 redis-check-aof
