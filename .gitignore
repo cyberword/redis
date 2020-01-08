@@ -5,6 +5,7 @@
 *.cbp
 *.exe
 *.cmake
+gdb.exe.stackdump
 .github
 .idea
 dump.rdb

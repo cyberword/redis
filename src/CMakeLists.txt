@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 2.8)
 #项目信息
 project (Redis-5.0.1)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pedantic -DREDIS_STATIC=''")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -W -Wno-missing-field-initializers")
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
@@ -47,7 +47,7 @@ find_library(LUA_LIB
 
 set(REDIS_SERVER_LIST adlist.c quicklist.c ae.c anet.c dict.c server.c sds.c zmalloc.c lzf_c.c lzf_d.c pqsort.c zipmap.c sha1.c ziplist.c release.c networking.c util.c object.c db.c replication.c rdb.c t_string.c t_list.c t_set.c t_zset.c t_hash.c config.c aof.c pubsub.c multi.c debug.c sort.c intset.c syncio.c cluster.c crc16.c endianconv.c slowlog.c scripting.c bio.c rio.c rand.c memtest.c crc64.c bitops.c sentinel.c notify.c setproctitle.c blocked.c hyperloglog.c latency.c sparkline.c redis-check-rdb.c redis-check-aof.c geo.c lazyfree.c module.c evict.c expire.c geohash.c geohash_helper.c childinfo.c defrag.c siphash.c rax.c t_stream.c listpack.c localtime.c lolwut.c lolwut5.c lolwut6.c acl.c gopher.c tracking.c connection.c tls.c sha256.c)
 set(REDIS_BENCHMARK_LIST ae.c anet.c adlist.c zmalloc.c redis-benchmark.c)
-set(REDIS_CLI_LIST anet.c adlist.c redis-cli.c zmalloc.c release.c anet.c ae.c crc64.c)
+set(REDIS_CLI_LIST anet.c adlist.c dict.c redis-cli.c zmalloc.c release.c anet.c ae.c crc64.c siphash.c crc16.c)
 
 add_executable(redis-server ${REDIS_SERVER_LIST})
 add_executable(redis-benchmark ${REDIS_BENCHMARK_LIST})
