@@ -1028,7 +1028,7 @@ int redisAppendCommandArgv(redisContext *c, int argc, const char **argv, const s
     sds cmd;
     int len;
 
-    len = redisFormatSdsCommandArgv(&cmd,argc,argv,argvlen);
+    len = redisFormatSdsCommandArgv(&cmd,argc,argv,argvlen);//通过参数格式化redis协议命令
     if (len == -1) {
         __redisSetError(c,REDIS_ERR_OOM,"Out of memory");
         return REDIS_ERR;
@@ -1073,7 +1073,7 @@ void *redisvCommand(redisContext *c, const char *format, va_list ap) {
 
 void *redisCommand(redisContext *c, const char *format, ...) {
     va_list ap;
-    va_start(ap,format);
+    va_start(ap,format);//va_start 获取format后的参数指针
     void *reply = redisvCommand(c,format,ap);
     va_end(ap);
     return reply;

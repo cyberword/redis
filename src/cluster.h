@@ -270,7 +270,7 @@ typedef struct {
     union clusterMsgData data;
 } clusterMsg;
 
-#define CLUSTERMSG_MIN_LEN (sizeof(clusterMsg)-sizeof(union clusterMsgData))
+#define CLUSTERMSG_MIN_LEN (sizeof(clusterMsg)-sizeof(union clusterMsData))
 
 /* Message flags better specify the packet content or are used to
  * provide some information about the node state. */

@@ -331,7 +331,7 @@ int redisContextSetTimeout(redisContext *c, const struct timeval tv) {
     }
     return REDIS_OK;
 }
-
+/*根据redisContext和地址端口做tcp连接*/
 static int _redisContextConnectTcp(redisContext *c, const char *addr, int port,
                                    const struct timeval *timeout,
                                    const char *source_addr) {

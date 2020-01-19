@@ -2535,7 +2535,7 @@ cleanup:
 
 static int clusterManagerNodeConnect(clusterManagerNode *node) {
     if (node->context) redisFree(node->context);
-    node->context = redisConnect(node->ip, node->port);
+    node->context = redisConnect(node->ip, node->port); //connect
     if (!node->context->err && config.tls) {
         const char *err = NULL;
         if (cliSecureConnection(node->context, &err) == REDIS_ERR && err) {
@@ -2694,7 +2694,7 @@ result:
  * host and are also in different hosts.
  *
  * The score is calculated as follows:
- *
+ * same_as_master 每个子节点拥有和master一样的ip     same_as_slave 每个子节点拥有同属master下其他节点一样的ip
  * SAME_AS_MASTER = 10000 * each slave in the same IP of its master.
  * SAME_AS_SLAVE  = 1 * each slave having the same IP as another slave
                       of the same master.
@@ -2821,7 +2821,7 @@ static void clusterManagerOptimizeAntiAffinity(clusterManagerNodeArray *ipnodes,
         while ((ln = listNext(&li)) != NULL) {
             clusterManagerNode *n = ln->value;
             if (n != first && n->replicate != NULL)
-                other_replicas[other_replicas_count++] = n;
+                other_replicas[other_replicas_count++] = n;//获取其他子节点
         }
         if (other_replicas_count == 0) {
             zfree(other_replicas);
@@ -3107,7 +3107,7 @@ static void clusterManagerShowClusterInfo(void) {
     float keys_per_slot = keys / (float) CLUSTER_MANAGER_SLOTS;
     printf("%.2f keys per slot on average.\n", keys_per_slot);
 }
-
+/* 调用 cluster addslots 添加槽位   */
 /* Flush dirty slots configuration of the node by calling CLUSTER ADDSLOTS */
 static int clusterManagerAddSlots(clusterManagerNode *node, char**err)
 {
@@ -3681,7 +3681,7 @@ static int clusterManagerMoveSlot(clusterManagerNode *source,
     }
     return 1;
 }
-
+/*处理dirty标记的node*/
 /* Flush the dirty node configuration by calling replicate for slaves or
  * adding the slots defined in the masters. */
 static int clusterManagerFlushNodeConfig(clusterManagerNode *node, char **err) {
@@ -5321,8 +5321,8 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
     }
     int node_len = cluster_manager.nodes->len;
     int replicas = config.cluster_manager_command.replicas;
-    int masters_count = CLUSTER_MANAGER_MASTERS_COUNT(node_len, replicas);
-    if (masters_count < 3) {
+    int masters_count = CLUSTER_MANAGER_MASTERS_COUNT(node_len, replicas);//计算master个数
+    if (masters_count < 3) {//master至少为三个
         clusterManagerLogErr(
             "*** ERROR: Invalid configuration for cluster creation.\n"
             "*** Redis Cluster requires at least 3 master nodes.\n"
@@ -5335,12 +5335,12 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
     clusterManagerLogInfo(">>> Performing hash slots allocation "
                           "on %d nodes...\n", node_len);
     int interleaved_len = 0, ip_count = 0;
-    clusterManagerNode **interleaved = zcalloc(node_len*sizeof(**interleaved));
+    clusterManagerNode **interleaved = zcalloc(node_len*sizeof(**interleaved));//申请node数组管理存放多个node指针
     char **ips = zcalloc(node_len * sizeof(char*));
-    clusterManagerNodeArray *ip_nodes = zcalloc(node_len * sizeof(*ip_nodes));
+    clusterManagerNodeArray *ip_nodes = zcalloc(node_len * sizeof(*ip_nodes));//nodeArray
     listIter li;
     listNode *ln;
-    listRewind(cluster_manager.nodes, &li);
+    listRewind(cluster_manager.nodes, &li);//设置node正序迭代器
     while ((ln = listNext(&li)) != NULL) {
         clusterManagerNode *n = ln->value;
         int found = 0;
@@ -5369,21 +5369,21 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
             }
         }
     }
-    clusterManagerNode **masters = interleaved;
+    clusterManagerNode **masters = interleaved;//master数组
     interleaved += masters_count;
     interleaved_len -= masters_count;
-    float slots_per_node = CLUSTER_MANAGER_SLOTS / (float) masters_count;
+    float slots_per_node = CLUSTER_MANAGER_SLOTS / (float) masters_count;//获取每个node的slots
     long first = 0;
     float cursor = 0.0f;
     for (i = 0; i < masters_count; i++) {
-        clusterManagerNode *master = masters[i];
-        long last = lround(cursor + slots_per_node - 1);
+        clusterManagerNode *master = masters[i];//master声明顺序由参数声明顺序决定
+        long last = lround(cursor + slots_per_node - 1);//分配master last槽数
         if (last > CLUSTER_MANAGER_SLOTS || i == (masters_count - 1))
             last = CLUSTER_MANAGER_SLOTS - 1;
         if (last < first) last = first;
         printf("Master[%d] -> Slots %lu - %lu\n", i, first, last);
         master->slots_count = 0;
-        for (j = first; j <= last; j++) {
+        for (j = first; j <= last; j++) {//设置master槽位
             master->slots[j] = 1;
             master->slots_count++;
         }
@@ -5394,7 +5394,7 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
 
     /* Rotating the list sometimes helps to get better initial
      * anti-affinity before the optimizer runs. */
-    clusterManagerNode *first_node = interleaved[0];
+    clusterManagerNode *first_node = interleaved[0];//推移list
     for (i = 0; i < (interleaved_len - 1); i++)
         interleaved[i] = interleaved[i + 1];
     interleaved[interleaved_len - 1] = first_node;
@@ -5402,7 +5402,7 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
 assign_replicas:
     for (i = 0; i < masters_count; i++) {
         clusterManagerNode *master = masters[i];
-        int assigned_replicas = 0;
+        int assigned_replicas = 0;//已分配的副本
         while (assigned_replicas < replicas) {
             if (available_count == 0) break;
             clusterManagerNode *found = NULL, *slave = NULL;
@@ -5444,8 +5444,8 @@ assign_replicas:
         clusterManagerNodeArray *node_array = ip_nodes + i;
         clusterManagerNodeArrayReset(node_array);
     }
-    clusterManagerOptimizeAntiAffinity(ip_nodes, ip_count);
-    clusterManagerShowNodes();
+    clusterManagerOptimizeAntiAffinity(ip_nodes, ip_count);//集群节点反亲和性优化，一些节点和子节点处于同一ip下 redis会尝试优化并重新分配
+    clusterManagerShowNodes();//打印node信息
     if (confirmWithYes("Can I set the above configuration?")) {
         listRewind(cluster_manager.nodes, &li);
         while ((ln = listNext(&li)) != NULL) {
@@ -5466,7 +5466,7 @@ assign_replicas:
                               "each node\n");
         int config_epoch = 1;
         listRewind(cluster_manager.nodes, &li);
-        while ((ln = listNext(&li)) != NULL) {
+        while ((ln = listNext(&li)) != NULL) {//cluster set config epoch
             clusterManagerNode *node = ln->value;
             redisReply *reply = NULL;
             reply = CLUSTER_MANAGER_COMMAND(node,
