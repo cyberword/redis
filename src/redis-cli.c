@@ -2557,7 +2557,7 @@ static int clusterManagerNodeConnect(clusterManagerNode *node) {
      * in order to prevent timeouts caused by the execution of long
      * commands. At the same time this improves the detection of real
      * errors. */
-    anetKeepAlive(NULL, node->context->fd, REDIS_CLI_KEEPALIVE_INTERVAL);
+    anetKeepAlive(NULL, node->context->fd, REDIS_CLI_KEEPALIVE_INTERVAL);//为了防止超时设置keep_alive
     if (config.auth) {
         redisReply *reply;
         if (config.user == NULL)
@@ -5287,22 +5287,22 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
             return 0;
         }
         *c = '\0';
-        char *ip = addr;
-        int port = atoi(++c);
+        char *ip = addr;//获取节点ip
+        int port = atoi(++c);//获取端口号
         clusterManagerNode *node = clusterManagerNewNode(ip, port);
-        if (!clusterManagerNodeConnect(node)) {
+        if (!clusterManagerNodeConnect(node)) {//客户端与node做tcp连接
             freeClusterManagerNode(node);
             return 0;
         }
         char *err = NULL;
-        if (!clusterManagerNodeIsCluster(node, &err)) {
+        if (!clusterManagerNodeIsCluster(node, &err)) {//判断node是否设置为cluster
             clusterManagerPrintNotClusterNodeError(node, err);
             if (err) zfree(err);
             freeClusterManagerNode(node);
             return 0;
         }
         err = NULL;
-        if (!clusterManagerNodeLoadInfo(node, 0, &err)) {
+        if (!clusterManagerNodeLoadInfo(node, 0, &err)) {//加载node基本信息
             if (err) {
                 CLUSTER_MANAGER_PRINT_REPLY_ERROR(node, err);
                 zfree(err);
@@ -5311,13 +5311,13 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
             return 0;
         }
         err = NULL;
-        if (!clusterManagerNodeIsEmpty(node, &err)) {
+        if (!clusterManagerNodeIsEmpty(node, &err)) {//检查改node是否为空 如果曾经与其他做过联系则不允许创建
             clusterManagerPrintNotEmptyNodeError(node, err);
             if (err) zfree(err);
             freeClusterManagerNode(node);
             return 0;
         }
-        listAddNodeTail(cluster_manager.nodes, node);
+        listAddNodeTail(cluster_manager.nodes, node);//将该node添加至尾部
     }
     int node_len = cluster_manager.nodes->len;
     int replicas = config.cluster_manager_command.replicas;
@@ -5335,8 +5335,9 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
     clusterManagerLogInfo(">>> Performing hash slots allocation "
                           "on %d nodes...\n", node_len);
     int interleaved_len = 0, ip_count = 0;
-    clusterManagerNode **interleaved = zcalloc(node_len*sizeof(**interleaved));//申请node数组管理存放多个node指针
+    clusterManagerNode **interleaved = zcalloc(node_len*sizeof(**interleaved));//存放重排序交错整理的node集合
     char **ips = zcalloc(node_len * sizeof(char*));
+    //通过ip对node进行分组 组间通过nodearray管理
     clusterManagerNodeArray *ip_nodes = zcalloc(node_len * sizeof(*ip_nodes));//nodeArray
     listIter li;
     listNode *ln;
@@ -5364,7 +5365,7 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
             clusterManagerNodeArray *node_array = &(ip_nodes[i]);
             if (node_array->count > 0) {
                 clusterManagerNode *n = NULL;
-                clusterManagerNodeArrayShift(node_array, &n);
+                clusterManagerNodeArrayShift(node_array, &n);//将数组首位节点赋值于n
                 interleaved[interleaved_len++] = n;
             }
         }
@@ -5372,7 +5373,7 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
     clusterManagerNode **masters = interleaved;//master数组
     interleaved += masters_count;
     interleaved_len -= masters_count;
-    float slots_per_node = CLUSTER_MANAGER_SLOTS / (float) masters_count;//获取每个node的slots
+    float slots_per_node = CLUSTER_MANAGER_SLOTS / (float) masters_count;//获取每个master的slots
     long first = 0;
     float cursor = 0.0f;
     for (i = 0; i < masters_count; i++) {

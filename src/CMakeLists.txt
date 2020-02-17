@@ -1,5 +1,5 @@
 #CMake最低版本要求
-cmake_minimum_required (VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.4.0)
 
 #项目信息
 project (Redis-5.0.1)
