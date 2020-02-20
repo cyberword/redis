@@ -5371,7 +5371,7 @@ static int clusterManagerCommandCreate(int argc, char **argv) {
         }
     }
     clusterManagerNode **masters = interleaved;//master数组
-    interleaved += masters_count;
+    interleaved += masters_count;//interleaved向后推移master_count方便后续分配集群
     interleaved_len -= masters_count;
     float slots_per_node = CLUSTER_MANAGER_SLOTS / (float) masters_count;//获取每个master的slots
     long first = 0;
